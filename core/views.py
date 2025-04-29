@@ -1,14 +1,31 @@
-from rest_framework import viewsets
-from .models import Event, AppUser, UserFollow, Participant, EventInteraction
-from .serializers import EventSerializer, AppUserSerializer, UserFollowSerializer, ParticipantSerializer, EventInteractionSerializer
+from rest_framework import viewsets, generics
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .models import *
+from .serializers import *
 
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
 class AppUserViewSet(viewsets.ModelViewSet):
-    queryset = AppUser.objects.all()
     serializer_class = AppUserSerializer
+
+    def get_queryset(self):
+        return AppUser.objects.filter(is_superuser=False)
+
+class CurrentUserAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = AppUserSerializer(request.user, context={'request': request})
+        return Response(serializer.data)
+    
+class RegistrationView(generics.CreateAPIView):
+    queryset = AppUser.objects.all()
+    serializer_class = RegistrationSerializer
 
 class UserFollowViewSet(viewsets.ModelViewSet):
     queryset = UserFollow.objects.all()
@@ -21,3 +38,6 @@ class ParticipantViewSet(viewsets.ModelViewSet):
 class EventInteractionViewSet(viewsets.ModelViewSet):
     queryset = EventInteraction.objects.all()
     serializer_class = EventInteractionSerializer
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import *
 
 
@@ -61,3 +62,30 @@ class UserFollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserFollow
         fields = ['id', 'follower', 'following', 'date_followed']
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # You can add custom claims here if you want
+        token['username'] = user.username
+        token['email'] = user.email
+
+        return token
+
+class RegistrationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+    
+    class Meta:
+        model = AppUser
+        fields = ['username', 'email', 'password']
+    
+    def create(self, validated_data):
+        user = AppUser.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password']
+        )
+
+        return user
